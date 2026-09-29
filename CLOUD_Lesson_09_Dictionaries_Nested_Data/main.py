@@ -119,7 +119,8 @@ def update_resource_usage(client_id: str, api_calls_delta: int, storage_delta_gb
     return True
 
 
-def evaluate_quota_overflow(client_id: str) -> Dict[str, Any]:
+def \
+        evaluate_quota_overflow(client_id: str) -> Dict[str, Any]:
     """
     Evaluates client usage against resource limits. Demonstrates multi-level
     nested dictionary access and safe condition verification.
