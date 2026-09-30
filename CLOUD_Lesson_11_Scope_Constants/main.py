@@ -8,7 +8,7 @@ Vizione Labs Cloud Infrastructure & Session Billing Engine
 
 Purpose:
 Demonstrates production-grade scope segregation, constant definitions, namespace isolation,
-and safe global state management for enterprise user session tracking and cloud billing.
+and safe state management patterns for enterprise user session tracking and cloud billing.
 """
 
 # ==============================================================================
@@ -21,9 +21,9 @@ MAX_CONCURRENT_SESSIONS = 5
 SYSTEM_ENVIRONMENT = "PRODUCTION"
 
 # ==============================================================================
-# GLOBAL APPLICATION STATE
+# GLOBAL APPLICATION STATE (MODULE COURTYARD)
 # ==============================================================================
-# Global counters tracking runtime platform statistics.
+# Global state variables tracking runtime platform statistics.
 total_active_sessions = 0
 total_platform_revenue = 0.0
 
@@ -31,33 +31,30 @@ total_platform_revenue = 0.0
 # ==============================================================================
 # CORE SYSTEM FUNCTIONS
 # ==============================================================================
-def initialize_user_session(client_id, hours_allocated):
+def initialize_user_session(client_id, hours_allocated, active_sessions, platform_revenue):
     """
     Initializes a new cloud computing session for a client.
-    Uses local scope calculation and explicitly mutates global tracking state.
 
-    Parameters:
-        client_id (str): Unique identifier for the enterprise client.
-        hours_allocated (int): Number of server compute hours requested.
+    Demonstrates the Pure Return Pattern for State Management:
+    Instead of mutating global variables directly inside this function, it receives
+    current system state as parameters, computes local math, and returns updated metrics.
 
     Returns:
-        dict: A structured summary of the created session.
+        tuple: (session_data_dict, updated_active_sessions, updated_platform_revenue)
     """
-    global total_active_sessions, total_platform_revenue
-
-    # Safety Guard: Check platform capacity limits
-    if total_active_sessions >= MAX_CONCURRENT_SESSIONS:
+    # Safety Guard: Check platform capacity limits using the passed state parameter
+    if active_sessions >= MAX_CONCURRENT_SESSIONS:
         print(f"[WARN] Session initialization rejected for '{client_id}': Capacity Limit Reached.")
-        return None
+        return None, active_sessions, platform_revenue
 
     # Local scope variable calculations
     subtotal = hours_allocated * DEFAULT_HOURLY_RATE
     tax_amount = subtotal * PLATFORM_TAX_RATE
     total_cost = subtotal + tax_amount
 
-    # Explicit Global State Mutation
-    total_active_sessions += 1
-    total_platform_revenue += total_cost
+    # Pure State Calculation (Local Scope)
+    updated_sessions = active_sessions + 1
+    updated_revenue = platform_revenue + total_cost
 
     session_data = {
         "client_id": client_id,
@@ -69,27 +66,26 @@ def initialize_user_session(client_id, hours_allocated):
     }
 
     print(f"[SUCCESS] Session initialized for client '{client_id}'. Cost: ${total_cost:.2f}")
-    return session_data
+    return session_data, updated_sessions, updated_revenue
 
 
-def terminate_user_session(session_data):
+def terminate_user_session(session_data, active_sessions):
     """
-    Terminates an active session and decrements the active session counter.
-    Demonstrates controlled state mutation while relying on local scope data.
+    Terminates an active session and decrements the session count safely.
+    Uses input arguments and explicit returns instead of hidden global mutations.
 
-    Parameters:
-        session_data (dict): The active session dictionary to close.
+    Returns:
+        tuple: (updated_session_data_dict, updated_active_sessions)
     """
-    global total_active_sessions
-
     if session_data and session_data.get("status") == "ACTIVE":
         session_data["status"] = "TERMINATED"
-        total_active_sessions -= 1
+        updated_sessions = active_sessions - 1
         client_id = session_data["client_id"]
-        print(
-            f"[TERMINATED] Session closed for client '{client_id}'. Active sessions remaining: {total_active_sessions}")
+        print(f"[TERMINATED] Session closed for client '{client_id}'. Active sessions remaining: {updated_sessions}")
+        return session_data, updated_sessions
     else:
         print("[ERROR] Invalid or already terminated session provided.")
+        return session_data, active_sessions
 
 
 def generate_system_audit_report():
@@ -117,17 +113,34 @@ if __name__ == "__main__":
     # Display initial state
     generate_system_audit_report()
 
-    # Simulating client session registrations
-    s1 = initialize_user_session(client_id="Client_Alpha", hours_allocated=10)
-    s2 = initialize_user_session(client_id="Client_Beta", hours_allocated=25)
-    s3 = initialize_user_session(client_id="Client_Gamma", hours_allocated=5)
+    # Simulating client session registrations using explicit state re-assignment
+    s1, total_active_sessions, total_platform_revenue = initialize_user_session(
+        client_id="Client_Alpha",
+        hours_allocated=10,
+        active_sessions=total_active_sessions,
+        platform_revenue=total_platform_revenue
+    )
+
+    s2, total_active_sessions, total_platform_revenue = initialize_user_session(
+        client_id="Client_Beta",
+        hours_allocated=25,
+        active_sessions=total_active_sessions,
+        platform_revenue=total_platform_revenue
+    )
+
+    s3, total_active_sessions, total_platform_revenue = initialize_user_session(
+        client_id="Client_Gamma",
+        hours_allocated=5,
+        active_sessions=total_active_sessions,
+        platform_revenue=total_platform_revenue
+    )
 
     # Display state post-initialization
     generate_system_audit_report()
 
-    # Terminating a session
+    # Terminating a session with explicit state re-assignment
     if s1:
-        terminate_user_session(s1)
+        s1, total_active_sessions = terminate_user_session(s1, total_active_sessions)
 
     # Display final state
     generate_system_audit_report()
