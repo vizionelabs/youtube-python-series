@@ -53,7 +53,6 @@ def increment_counter_incorrect():
     # global_counter += 1  # UnboundLocalError: local variable 'global_counter' referenced before assignment
     pass
 
-
 def increment_counter_explicit():
     global global_counter
     global_counter += 1
