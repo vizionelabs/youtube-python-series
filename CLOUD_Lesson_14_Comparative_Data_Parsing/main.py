@@ -51,6 +51,8 @@ class OperationalDataParser:
             metrics = record.get("metrics", {})
 
             # Extract nested parameters safely
+            metrics: dict = record.get("metrics", {})
+
             health_score = metrics.get("health_score", 0.0)
             latency = metrics.get("latency_ms", 0.0)
 
